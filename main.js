@@ -18,7 +18,7 @@
 
   /* scroll: header, barra da viagem, parallax do hero, frota */
   const nav = $('.nav'), trip = $('.trip'), fill = $('.trip__fill'), van = $('.trip__van');
-  const heroImg = $('.hero__media img');
+  const heroVan = $('#heroVan'), heroIn = $('.hero__inner'), hero = $('.hero');
   const frota = $('.frota'), frotaImg = $('.frota__img');
   const hots = $$('.hot'), steps = $$('.frota__steps p');
   const wide = matchMedia('(min-width:1001px)');
@@ -33,7 +33,12 @@
     trip.classList.toggle('on', y > vh * .6);
     fill.style.width = (p * 100) + '%';
     van.style.left = (p * 100) + '%';
-    if (y < vh) heroImg.style.transform = `scale(${1.08 + y / vh * .12}) translateY(${y * .12}px)`;
+    if (y < vh * 1.2) {
+      // rolando, a van segue viagem pra esquerda (pra onde ela aponta)
+      heroVan.style.setProperty('--sx', (-y * .55) + 'px');
+      heroVan.style.setProperty('--ss', 1 + y / vh * .08);
+      if (wide.matches) heroIn.style.setProperty('--fo', Math.max(0, 1 - y / (vh * .7)));
+    }
 
     if (wide.matches) {
       const r = frota.getBoundingClientRect();
@@ -54,6 +59,20 @@
   }
   addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(onScroll); } }, { passive: true });
   addEventListener('resize', onScroll);
+
+  /* parallax com o mouse no hero */
+  if (matchMedia('(pointer:fine)').matches && !matchMedia('(prefers-reduced-motion:reduce)').matches) {
+    let tx = 0, ty = 0, cx = 0, cy = 0, raf = 0;
+    const loop = () => {
+      cx += (tx - cx) * .06; cy += (ty - cy) * .06;
+      hero.style.setProperty('--mx', cx.toFixed(3)); hero.style.setProperty('--my', cy.toFixed(3));
+      raf = Math.abs(tx - cx) + Math.abs(ty - cy) > .002 ? requestAnimationFrame(loop) : 0;
+    };
+    hero.addEventListener('pointermove', e => {
+      tx = e.clientX / innerWidth * 2 - 1; ty = e.clientY / innerHeight * 2 - 1;
+      if (!raf) raf = requestAnimationFrame(loop);
+    });
+  }
   onScroll();
 
   /* mapa de rotas: posições projetadas de lat/long reais (x=(lon+46.8)/1.8*800, y=(-22.3-lat)/1.8*800) */
